@@ -1,26 +1,28 @@
 // middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
-import asyncHandler from "express-async-handler";
 import User from "../models/User.js";
 
-export const protect = asyncHandler(async (req, res, next) => {
-  let token;
-  if (req.headers.authorization?.startsWith("Bearer")) {
-    token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select("-password");
-    if (!req.user) throw new Error("User not found");
-    next();
-  } else {
-    res.status(401);
-    throw new Error("Not authorized, token missing");
-  }
-});
+export const authMiddleware = (roles = []) => {
+  return async (req, res, next) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "No token" });
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-export const admin = (req, res, next) => {
-  if (req.user && req.user.role === "admin") next();
-  else {
-    res.status(403);
-    throw new Error("Admin resource. Access denied.");
-  }
+      const user = await User.findById(decoded.id).select("-password");
+      if(!user) return res.status(401).json({error: "User not found"});
+
+      if (roles.length && !roles.includes(decoded.role)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      req.user = decoded; // attach user data to request
+      next();
+    } catch (err) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  };
 };
+
+export const protect = authMiddleware();
+export const admin = authMiddleware(["admin"]);

@@ -1,17 +1,24 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LoginScreen from '../screens/LoginScreen';
-import ProductScreen from '../screens/ProductScreen';
-import SalesScreen from '../screens/SalesScreen';
+import React, { useContext } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import LoginScreen from "../screens/LoginScreen.js";
+import ProductListScreen from "../screens/ProductListScreen.js";
+import { AuthContext } from "../context/AuthContext.js";
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-	return (
-		<Stack.Navigator initialRouteName="Login">
-			<Stack.Screen name="Login" component={LoginScreen} />
-			<Stack.Screen name="Products" component={ProductScreen} />
-			<Stack.Screen name="Sales" component={SalesScreen} />
-		</Stack.Navigator>
-	);
+  const { token } = useContext(AuthContext);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        {token ? (
+          <Stack.Screen name="Products" component={ProductListScreen} />
+        ) : (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }
